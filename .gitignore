@@ -1,0 +1,9 @@
+target/
+*.jar
+*.war
+.metadata
+.classpath
+.project
+.settings/
+Thumbs.db
+.DS_Store

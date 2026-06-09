@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dulce Bom - Nueva Contraseña</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/assets/style.css}">
+</head>
+<body>
+
+<div id="authContainer">
+    <div class="auth-card">
+        <div class="auth-img" style="background-image: url('/assets/pedidos.jpg');"></div>
+        <div class="auth-body">
+            <h2>Nueva Contraseña</h2>
+            <p class="auth-sub">Gestión de Pastelería</p>
+
+            <!-- Token inválido o expirado -->
+            <div th:if="${!error.isEmpty()}" class="alert alert-danger py-2 text-center small mb-3"
+                 th:text="${error}"></div>
+
+            <!-- Formulario si el token es válido -->
+            <div th:if="${!token.isEmpty()}">
+                <div id="msgError" class="alert alert-danger py-2 text-center small mb-3 d-none"></div>
+                <div id="msgSuccess" class="alert alert-success py-2 text-center small mb-3 d-none"></div>
+
+                <input type="hidden" id="tokenField" th:value="${token}"/>
+
+                <div class="mb-3">
+                    <label class="form-label">Nueva Contraseña</label>
+                    <input type="password" id="newPassword" class="form-control"
+                           placeholder="Mínimo 6 caracteres" required/>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Confirmar Contraseña</label>
+                    <input type="password" id="confirmPassword" class="form-control"
+                           placeholder="Repite tu contraseña" required/>
+                </div>
+
+                <button onclick="guardarContrasena()" id="btnGuardar"
+                        class="btn btn-primary w-100 py-2 fw-bold">
+                    <i class="bi bi-lock-fill me-2"></i>Guardar nueva contraseña
+                </button>
+            </div>
+
+            <!-- Si token inválido, enlace para solicitar de nuevo -->
+            <p class="auth-links text-center mt-3">
+                <a th:href="@{/recuperar}">Solicitar nuevo enlace</a>
+                <a th:href="@{/login}">Volver al login</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+async function guardarContrasena() {
+    const token      = document.getElementById('tokenField').value;
+    const newPass    = document.getElementById('newPassword').value;
+    const confirm    = document.getElementById('confirmPassword').value;
+    const msgErr     = document.getElementById('msgError');
+    const msgOk      = document.getElementById('msgSuccess');
+    const btn        = document.getElementById('btnGuardar');
+
+    msgErr.classList.add('d-none');
+    msgOk.classList.add('d-none');
+
+    if (newPass.length < 6) {
+        msgErr.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+        msgErr.classList.remove('d-none'); return;
+    }
+    if (newPass !== confirm) {
+        msgErr.textContent = 'Las contraseñas no coinciden.';
+        msgErr.classList.remove('d-none'); return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+    try {
+        const res = await fetch('/recuperar/guardar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, newPassword: newPass })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            msgOk.textContent = data.message;
+            msgOk.classList.remove('d-none');
+            btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>¡Listo!';
+            setTimeout(() => window.location.href = '/home', 2000);
+        } else {
+            msgErr.textContent = data.message || 'Error al guardar.';
+            msgErr.classList.remove('d-none');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Guardar nueva contraseña';
+        }
+    } catch (e) {
+        msgErr.textContent = 'Error de conexión con el servidor.';
+        msgErr.classList.remove('d-none');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-lock-fill me-2"></i>Guardar nueva contraseña';
+    }
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

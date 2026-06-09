@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dulce Bom - Crear Cuenta</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/assets/style.css}">
+</head>
+<body>
+
+<div id="authContainer">
+    <div class="auth-card">
+        <div class="auth-img" style="background-image: url('/assets/pedidos.jpg');"></div>
+        <div class="auth-body">
+            <h2>Crear Cuenta</h2>
+            <p class="auth-sub">Gestión de Pastelería</p>
+
+            <div id="msgError" class="alert alert-danger py-2 text-center small mb-3 d-none"></div>
+            <div id="msgSuccess" class="alert alert-success py-2 text-center small mb-3 d-none"></div>
+
+            <div class="mb-3">
+                <label class="form-label">Nombre completo</label>
+                <input type="text" id="registerName" class="form-control"
+                       placeholder="Ingrese su nombre" required/>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" id="registerEmail" class="form-control"
+                       placeholder="Ingrese su email" required/>
+            </div>
+            <div class="mb-4">
+                <label class="form-label">Contraseña</label>
+                <input type="password" id="registerPassword" class="form-control"
+                       placeholder="Mínimo 6 caracteres" required/>
+            </div>
+
+            <button onclick="registrar()" class="btn btn-primary w-100 py-2 fw-bold">
+                Crear Cuenta
+            </button>
+
+            <p class="auth-links text-center mt-2">
+                <a th:href="@{/login}">¿Ya tienes cuenta? Inicia sesión.</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Lee la cookie XSRF-TOKEN correctamente (decodifica caracteres especiales)
+function getCookie(name) {
+    for (let c of document.cookie.split(';')) {
+        const [k, v] = c.trim().split('=');
+        if (k === name) return decodeURIComponent(v);
+    }
+    return null;
+}
+
+async function registrar() {
+    const name     = document.getElementById('registerName').value.trim();
+    const email    = document.getElementById('registerEmail').value.trim();
+    const password = document.getElementById('registerPassword').value;
+    const msgError   = document.getElementById('msgError');
+    const msgSuccess = document.getElementById('msgSuccess');
+
+    msgError.classList.add('d-none');
+    msgSuccess.classList.add('d-none');
+
+    if (name.length < 3) {
+        msgError.textContent = 'El nombre debe tener al menos 3 caracteres.';
+        msgError.classList.remove('d-none'); return;
+    }
+    if (!email.includes('@') || !email.includes('.')) {
+        msgError.textContent = 'El formato del email no es válido.';
+        msgError.classList.remove('d-none'); return;
+    }
+    if (password.length < 6) {
+        msgError.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+        msgError.classList.remove('d-none'); return;
+    }
+
+    try {
+        const csrfToken = getCookie('XSRF-TOKEN');
+
+        const response = await fetch('/registro/guardar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(csrfToken ? { 'X-XSRF-TOKEN': csrfToken } : {})
+            },
+            body: JSON.stringify({ name, email, password })
+        });
+
+        if (!response.ok) {
+            msgError.textContent = 'Error del servidor (' + response.status + '). Reinicia Spring Boot.';
+            msgError.classList.remove('d-none');
+            return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            msgSuccess.textContent = '¡Cuenta creada! Redirigiendo al login...';
+            msgSuccess.classList.remove('d-none');
+            setTimeout(() => window.location.href = '/login', 2000);
+        } else {
+            msgError.textContent = result.message || 'Error al crear la cuenta.';
+            msgError.classList.remove('d-none');
+        }
+    } catch (e) {
+        msgError.textContent = 'No se pudo conectar. ¿Está corriendo Spring Boot?';
+        msgError.classList.remove('d-none');
+    }
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
